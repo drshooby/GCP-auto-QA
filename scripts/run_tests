@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -euo pipefail
+
+GCP_AUTH_TOKEN=$(gcloud auth print-identity-token)
+
+terraform apply
+
+CLOUD_FN_URL=$(terraform output -raw cloud_function_invoke_url)
+
+export GCP_AUTH_TOKEN
+export CLOUD_FN_URL
+
+cd ../app
+go test
+
+cd ../terraform
+terraform destroy
