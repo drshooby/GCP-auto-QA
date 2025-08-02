@@ -1,5 +1,9 @@
 // https://cloud.google.com/functions/docs/tutorials/terraform
 
+locals {
+  project = var.project_id
+}
+
 resource "random_id" "default" {
   byte_length = 8
 }
@@ -8,7 +12,7 @@ resource "google_storage_bucket" "default" {
   name                        = "${random_id.default.hex}-gcf-source"
   location                    = "US"
   uniform_bucket_level_access = true
-  force_destroy               = true // TODO! why doesn't this delete the bucket
+  force_destroy               = true // doesn't delete non-empty
 }
 
 data "archive_file" "default" {
@@ -23,20 +27,44 @@ resource "google_storage_bucket_object" "object" {
   source = data.archive_file.default.output_path
 }
 
-resource "google_cloudfunctions_function" "function" {
+resource "google_cloudfunctions2_function" "function" {
   name        = "auto-qa-runner-function"
-  region      = "us-west1"
   description = "report status"
-  runtime     = "python311"
+  location    = "us-west1"
 
-  max_instances = 1
+  build_config {
+    runtime     = "python311"
+    entry_point = "status_get"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.default.name
+        object = google_storage_bucket_object.object.name
+      }
+    }
+  }
 
-  source_archive_bucket = google_storage_bucket.default.name
-  source_archive_object = google_storage_bucket_object.object.name
 
-  available_memory_mb          = 128
-  trigger_http                 = true
-  https_trigger_security_level = "SECURE_ALWAYS"
-  timeout                      = 60
-  entry_point                  = "status_get"
+  service_config {
+    max_instance_count = 1
+    available_memory   = "128Mi"
+    timeout_seconds    = 60
+    secret_environment_variables {
+      key        = "SLACK_WEBHOOK_URL"
+      project_id = local.project
+      secret     = google_secret_manager_secret.slack_webhook.secret_id
+      version    = "latest"
+    }
+  }
+
+  depends_on = [
+    google_secret_manager_secret_version.slack_webhook_url_version,
+    google_secret_manager_secret_iam_member.slack_webhook_access
+  ]
+}
+
+resource "google_cloudfunctions2_function_iam_member" "invoker" {
+  location       = google_cloudfunctions2_function.function.location
+  cloud_function = google_cloudfunctions2_function.function.name
+  role           = "roles/cloudfunctions.invoker"
+  member         = "allUsers" # meh
 }
