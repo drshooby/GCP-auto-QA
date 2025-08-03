@@ -2,16 +2,19 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
+	run "cloud.google.com/go/run/apiv2"
+	runpb "cloud.google.com/go/run/apiv2/runpb"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/oauth2/google"
 )
 
 type TestStatus struct {
@@ -24,6 +27,39 @@ func SetUpRouter() *gin.Engine {
 	router := gin.Default()
 	router.GET("/add", AddHandler)
 	return router
+}
+
+func getAuthToken(ctx context.Context) (string, error) {
+	tokenSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		return "", err
+	}
+
+	token, err := tokenSource.Token()
+	if err != nil {
+		return "", err
+	}
+
+	return token.AccessToken, nil
+}
+
+func getCloudFunctionURL(ctx context.Context, projectID, region, functionName string) (string, error) {
+	client, err := run.NewServicesClient(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer client.Close()
+
+	req := &runpb.GetServiceRequest{
+		Name: fmt.Sprintf("projects/%s/locations/%s/services/%s", projectID, region, functionName),
+	}
+
+	service, err := client.GetService(ctx, req)
+	if err != nil {
+		return "", err
+	}
+
+	return service.Uri, nil
 }
 
 func TestAddHandler(t *testing.T) {
@@ -86,16 +122,19 @@ func TestAddHandler(t *testing.T) {
 		})
 	}
 
-	authToken := os.Getenv("GCP_AUTH_TOKEN")
-	if authToken == "" {
-		panic("MISSING AUTH TOKEN")
+	ctx := context.Background()
+
+	cloudFnURL, err := getCloudFunctionURL(ctx, "automated-qa-runner", "us-west1", "auto-qa-runner-function")
+	if err != nil {
+		panic(fmt.Sprintf("Failed to get function URL: %v", err))
 	}
 
-	cloudFnURL := os.Getenv("CLOUD_FN_URL")
-	if cloudFnURL == "" {
-		panic("MISSING CLOUD FUNCTION URL")
-	}
+	_, err = getAuthToken(ctx)
 
+	if err != nil {
+		fmt.Printf("Auth token error: %v\n", err)
+		panic(fmt.Sprintf("FAILED TO GET AUTH TOKEN: %v", err))
+	}
 	report := struct {
 		Status  string       `json:"status"`
 		Results []TestStatus `json:"results"`
@@ -114,7 +153,7 @@ func TestAddHandler(t *testing.T) {
 		panic(fmt.Sprintf("FAILED TO CREATE REQUEST: %s", err))
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+authToken)
+	// req.Header.Set("Authorization", "Bearer "+authToken)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
