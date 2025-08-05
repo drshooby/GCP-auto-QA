@@ -3,6 +3,10 @@ variable "slack_webhook_url" {
   sensitive = true
 }
 
+variable "user-email" {
+  type = string
+}
+
 variable "project_id" {
   type = string
 }
