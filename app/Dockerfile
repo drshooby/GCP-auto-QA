@@ -1,4 +1,8 @@
-FROM golang:1.23-alpine
+# Yeah so this image might be a bit massive
+# Ideally after running tests we two-step build or find another way to test
+# But this is a project to learn GCP not Docker w/ Go so it's fine for now
+
+FROM golang:1.24.5-alpine
 
 WORKDIR /app
 
