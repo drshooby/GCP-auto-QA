@@ -14,7 +14,7 @@ import (
 	run "cloud.google.com/go/run/apiv2"
 	runpb "cloud.google.com/go/run/apiv2/runpb"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/oauth2/google"
+	"google.golang.org/api/idtoken"
 )
 
 type TestStatus struct {
@@ -29,17 +29,15 @@ func SetUpRouter() *gin.Engine {
 	return router
 }
 
-func getAuthToken(ctx context.Context) (string, error) {
-	tokenSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
+func getAuthToken(ctx context.Context, audience string) (string, error) {
+	ts, err := idtoken.NewTokenSource(ctx, audience)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create ID token source: %w", err)
 	}
-
-	token, err := tokenSource.Token()
+	token, err := ts.Token()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get ID token: %w", err)
 	}
-
 	return token.AccessToken, nil
 }
 
@@ -129,7 +127,7 @@ func TestAddHandler(t *testing.T) {
 		panic(fmt.Sprintf("Failed to get function URL: %v", err))
 	}
 
-	_, err = getAuthToken(ctx)
+	authToken, err := getAuthToken(ctx, cloudFnURL)
 
 	if err != nil {
 		fmt.Printf("Auth token error: %v\n", err)
@@ -153,7 +151,7 @@ func TestAddHandler(t *testing.T) {
 		panic(fmt.Sprintf("FAILED TO CREATE REQUEST: %s", err))
 	}
 	req.Header.Set("Content-Type", "application/json")
-	// req.Header.Set("Authorization", "Bearer "+authToken)
+	req.Header.Set("Authorization", "Bearer "+authToken)
 
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
