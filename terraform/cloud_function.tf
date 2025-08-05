@@ -62,19 +62,10 @@ resource "google_cloudfunctions2_function" "function" {
   ]
 }
 
-# 2 policies for a simple lambda? seriously?
-# TODO: remove allUsers, make a bit more secure
-resource "google_cloudfunctions2_function_iam_member" "invoker" {
+resource "google_cloudfunctions2_function_iam_member" "invoker_user" {
   location       = google_cloudfunctions2_function.function.location
   cloud_function = google_cloudfunctions2_function.function.name
+  project        = var.project_id
   role           = "roles/cloudfunctions.invoker"
-  member         = "allUsers"
-}
-
-resource "google_cloud_run_service_iam_member" "invoker" {
-  location = google_cloudfunctions2_function.function.location
-  project  = var.project_id
-  service  = google_cloudfunctions2_function.function.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
+  member         = "serviceAccount:automated-qa-runner@appspot.gserviceaccount.com"
 }
