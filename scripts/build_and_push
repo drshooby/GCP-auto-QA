@@ -1,0 +1,46 @@
+#!/bin/bash
+
+## build_and_push
+
+set -euo pipefail
+
+# if [ "$#" -ne 1 ]; then
+#   echo "usage: ./build_and_push <ACCOUNT>"
+#   exit 1
+# fi
+
+# assume we are in /scripts
+cd ../app
+
+# assert docker exists
+if command -v docker &> /dev/null; then
+  echo "Docker found."
+else
+  echo "Docker not found. Check installation"
+  exit 1
+fi
+
+LOCATION="us-west1"
+PROJECT_ID="automated-qa-runner"
+
+# ideally these would come from terraform output -- not a fan of hardcoding
+REPOSITORY="auto-qa-repo"
+ACCOUNT="runner-artifacts-service@automated-qa-runner.iam.gserviceaccount.com"
+
+echo "Logging in to Artifact Registry..."
+gcloud auth print-access-token \
+  --impersonate-service-account "$ACCOUNT" | docker login \
+  -u oauth2accesstoken \
+  --password-stdin "https://${LOCATION}-docker.pkg.dev"
+
+IMAGE_NAME="gin-math"
+TAG="latest"
+FULL_IMAGE="${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${TAG}"
+
+echo "Building."
+docker build -t "$FULL_IMAGE" .
+
+echo "Pushing."
+docker push "$FULL_IMAGE"
+
+echo "Done."
