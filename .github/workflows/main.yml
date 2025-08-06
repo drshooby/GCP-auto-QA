@@ -40,11 +40,42 @@ jobs:
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
 
-      - name: Execute Cloud Run Job
+      - name: Run Cloud Run Job
         run: |
-          gcloud run jobs execute qa-test-runner \
+          EXECUTION_NAME=$(gcloud run jobs execute qa-test-runner \
             --region us-west1 \
-            --project automated-qa-runner
+            --project automated-qa-runner \
+            --format="value(metadata.name)")
+
+          echo "Started execution: $EXECUTION_NAME"
+
+          # Poll for up to 2 minutes
+          TIMEOUT=120
+          ELAPSED=0
+
+          while [[ $ELAPSED -lt $TIMEOUT ]]; do
+            STATUS=$(gcloud run jobs executions describe "$EXECUTION_NAME" \
+              --region us-west1 \
+              --project automated-qa-runner \
+              --format="value(status.conditions[?(@.type=='Completed')].status)")
+
+            if [[ "$STATUS" == "True" ]]; then
+              echo "Execution completed successfully."
+              break
+            elif [[ "$STATUS" == "False" ]]; then
+              echo "Execution failed."
+              exit 1
+            else
+              echo "Execution still running... waiting 10 seconds."
+              sleep 10
+              ((ELAPSED+=10))
+            fi
+          done
+
+          if [[ $ELAPSED -ge $TIMEOUT ]]; then
+            echo "Execution timed out after 2 minutes"
+            exit 1
+          fi
 
       - name: Terraform Destroy QA Infra
         if: always()
