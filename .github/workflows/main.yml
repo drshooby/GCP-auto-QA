@@ -41,5 +41,4 @@ jobs:
         if: always()
         run: |
           cd terraform/step-2-app
-          terraform init -input=false
           terraform destroy -auto-approve
