@@ -2,6 +2,10 @@
 
 automated QA test runner to learn several GCP services
 
+# Diagram
+
+![flow diagram for project](pictures/flow.png)
+
 # Authentication & Service Account Setup Guide for Automated QA Runner
 
 This document explains how to configure authentication for this project, including:
