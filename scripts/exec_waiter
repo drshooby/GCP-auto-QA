@@ -7,44 +7,12 @@ set -euo pipefail
 JOB_NAME="qa-test-runner"
 REGION="us-west1"
 PROJECT="automated-qa-runner"
-TIMEOUT=140 # seconds
 
 echo "Starting Cloud Run Job: $JOB_NAME"
 
-EXECUTION_NAME=$(gcloud run jobs execute "$JOB_NAME" \
+gcloud run jobs execute "$JOB_NAME" \
   --region "$REGION" \
   --project "$PROJECT" \
-  --format="value(metadata.name)")
-
-if [[ -z "$EXECUTION_NAME" ]]; then
-  echo "Failed to start job execution"
-  exit 1
-fi
-
-echo "Started execution: $EXECUTION_NAME"
-
-ELAPSED=0
-
-while [[ $ELAPSED -lt $TIMEOUT ]]; do
-  STATUS=$(gcloud run jobs executions describe "$EXECUTION_NAME" \
-    --region "$REGION" \
-    --project "$PROJECT" \
-    --format="value(status.conditions[?(@.type=='Completed')].status)")
-
-  echo $STATUS
-
-  if [[ "$STATUS" == "True" ]]; then
-    echo "Execution completed successfully."
-    exit 0
-  elif [[ "$STATUS" == "False" ]]; then
-    echo "Execution failed."
-    exit 1
-  else
-    echo "Execution still running... waiting 10 seconds."
-    sleep 10
-    ((ELAPSED+=10))
-  fi
-done
-
-echo "Execution timed out after ${TIMEOUT} seconds"
-exit 1
+  --format="json" \
+  --task-timeout="2m" \
+  --wait
