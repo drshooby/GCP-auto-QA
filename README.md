@@ -2,6 +2,11 @@
 
 automated QA test runner to learn several GCP services
 
+## TODO
+
+- Figure out how to get GCP working in automated workflows and integrate into GitHub Actions
+- Cleanup
+
 # Diagram
 
 ![flow diagram for project](pictures/flow.png)
