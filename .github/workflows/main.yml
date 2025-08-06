@@ -21,6 +21,9 @@ jobs:
           workload_identity_provider: ${{ secrets.WI_PROVIDER }}
           service_account: "cicd-github@automated-qa-runner.iam.gserviceaccount.com"
 
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v2"
+
       # artifact registry currently exists with an image so we will skip for now
 
       - name: Setup Terraform
@@ -36,6 +39,12 @@ jobs:
           terraform validate
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
+
+      - name: Execute Cloud Run Job
+        run: |
+          gcloud run jobs execute qa-test-runner \
+            --region us-west1 \
+            --project automated-qa-runner
 
       - name: Terraform Destroy QA Infra
         if: always()
