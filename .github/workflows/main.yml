@@ -1,3 +1,5 @@
+name: QA Auto Runner
+
 permissions:
   id-token: write
   contents: read
@@ -9,6 +11,9 @@ jobs:
   qa:
     runs-on: ubuntu-24.04
     steps:
+      - name: Checkout Code
+        uses: "actions/checkout@v4"
+
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
