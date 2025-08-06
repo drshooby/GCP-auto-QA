@@ -27,5 +27,8 @@ func AddHandler(c *gin.Context) {
 func main() {
 	r := gin.Default()
 	r.GET("/add", AddHandler)
+	// GCP cloud run listens on 8080, however,
+	// in this case we dont actually care about the app starting -- only tests.
+	// NOTE TO SELF IN FUTURE: THIS IS A CLOUD RUN **JOB** TASK NOT A CLOUD RUN TASK
 	r.Run(":3000")
 }
