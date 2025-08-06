@@ -1,1 +1,19 @@
+permissions:
+  id-token: write
+  contents: read
 
+on:
+  workflow_dispatch:
+
+jobs:
+  qa:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: "automated-qa-runner"
+          workload_identity_provider: ${{ secrets.WI_PROVIDER }}
+          service_account: "cicd-github@automated-qa-runner.iam.gserviceaccount.com"
+
+      # Your deployment steps here
