@@ -21,4 +21,25 @@ jobs:
           workload_identity_provider: ${{ secrets.WI_PROVIDER }}
           service_account: "cicd-github@automated-qa-runner.iam.gserviceaccount.com"
 
-      # Your deployment steps here
+      # artifact registry currently exists with an image so we will skip for now
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Run Terraform
+        env:
+          TF_VAR_project_id: "automated-qa-runner"
+          TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          cd terraform/step-2-app
+          terraform init -input=false
+          terraform validate
+          terraform plan -out=tfplan
+          terraform apply -auto-approve tfplan
+
+      - name: Terraform Destroy QA Infra
+        if: always()
+        run: |
+          cd terraform/step-2-app
+          terraform init -input=false
+          terraform destroy -auto-approve
