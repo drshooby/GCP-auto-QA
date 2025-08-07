@@ -1,11 +1,22 @@
 # GCP-auto-QA
 
-automated QA test runner to learn several GCP services
+This project was definitely a challenge! Coming from AWS, I thought it would be straightforward, but I spent a couple of days just trying to wrap my head around service accounts versus user accounts. I definitely had my fair share of frustrations, but how Google Cloud does things eventually clicked. Now it makes sense why so many people use it — once you get the hang of it, it’s very pleasant to work with. No matter the provider, I’m always wrestling with IAM policies, but this time it didn’t feel too bad. Plus, I managed to build and run everything without spending a dime — even though I was hoping to put my free credits to use! Overall, it was a great learning experience.
+
+> For any viewers, please pardon the mess. I really wanted to get this project done before classes and other responsibilities picked up 🙂.
 
 ## TODO
 
-- Figure out how to get GCP working in automated workflows and integrate into GitHub Actions
+- Worfklow works. Awesome!
 - Cleanup
+- Documentation
+
+# Services Learned/Used
+
+- Cloud Run Jobs
+- Cloud Run Functions
+- Artifact Registry
+- Cloud Storage
+- Secret Manager
 
 # Diagram
 
