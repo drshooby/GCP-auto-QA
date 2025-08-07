@@ -50,7 +50,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./app
           push: true
           tags: "us-west1-docker.pkg.dev/automated-qa-runner/auto-qa-repo/gin-math:latest"
 
