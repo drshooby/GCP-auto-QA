@@ -4,10 +4,10 @@
 
 set -euo pipefail
 
-# if [ "$#" -ne 1 ]; then
-#   echo "usage: ./build_and_push <ACCOUNT>"
-#   exit 1
-# fi
+if [ "$#" -ne 1 ]; then
+  echo "usage: ./build_and_push <ACCOUNT>"
+  exit 1
+fi
 
 # assume we are in /scripts
 cd ../app
@@ -25,7 +25,7 @@ PROJECT_ID="automated-qa-runner"
 
 # ideally these would come from terraform output -- not a fan of hardcoding
 REPOSITORY="auto-qa-repo"
-ACCOUNT="runner-artifacts-service@automated-qa-runner.iam.gserviceaccount.com"
+ACCOUNT=$1 #"runner-artifacts-service@automated-qa-runner.iam.gserviceaccount.com"
 
 echo "Logging in to Artifact Registry..."
 gcloud auth print-access-token \

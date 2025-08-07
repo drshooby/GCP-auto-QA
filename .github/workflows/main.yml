@@ -21,15 +21,40 @@ jobs:
           workload_identity_provider: ${{ secrets.WI_PROVIDER }}
           service_account: "cicd-github@automated-qa-runner.iam.gserviceaccount.com"
 
-      - name: "Set up Cloud SDK"
+      - name: Set up Cloud SDK
         uses: "google-github-actions/setup-gcloud@v2"
-
-      # artifact registry currently exists with an image so we will skip for now
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Run Terraform
+      - name: Run Terraform Pt1
+        env:
+          TF_VAR_project_id: "automated-qa-runner"
+        run: |
+          cd terraform/step-1-app
+          terraform init -input=false
+          terraform validate
+          terraform plan -out=tfplan
+          terraform apply -auto-approve tfplan
+
+      - name: Log in to Artifact Registry
+        run: |
+          gcloud auth configure-docker "us-west1-docker.pkg.dev" --quiet
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: "us-west1-docker.pkg.dev/automated-qa-runner/auto-qa-repo/gin-math:latest"
+
+      - name: Run Terraform Pt2
         env:
           TF_VAR_project_id: "automated-qa-runner"
           TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -52,6 +77,10 @@ jobs:
           TF_VAR_project_id: "automated-qa-runner"
           TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
+          cd terraform/step-2-app
+          terraform init -input=false
+          terraform destroy -auto-approve
+          cd ..
           cd terraform/step-2-app
           terraform init -input=false
           terraform destroy -auto-approve
