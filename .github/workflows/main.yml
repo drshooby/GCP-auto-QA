@@ -77,10 +77,11 @@ jobs:
           TF_VAR_project_id: "automated-qa-runner"
           TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          cd terraform/step-1-artifacts
+          cd terraform
+          cd step-1-artifacts
           terraform init -input=false
           terraform destroy -auto-approve
           cd ..
-          cd terraform/step-2-app
+          cd step-2-app
           terraform init -input=false
           terraform destroy -auto-approve
